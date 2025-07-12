@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>🔥 Ultra Clean Site</title>
+  <title>🔥 Ultra Clean Site + hCaptcha</title>
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://hcaptcha.com/1/api.js" async defer></script>
 </head>
 <body>
   <div class="background"></div>
@@ -13,7 +14,13 @@
     <div class="card">
       <h1>Welcome to the Future</h1>
       <p>This website looks like $999 but it’s made with just HTML + CSS 💸</p>
-      <a href="#" class="btn">Explore Now</a>
+
+      <form action="/verify" method="POST">
+        <div class="h-captcha" data-sitekey="ES_dfdafb817e984ee7ac347173f8d8a6ae"></div>
+        <br>
+        <button type="submit" class="btn">Prove You’re Human</button>
+      </form>
+
     </div>
   </div>
 </body>
