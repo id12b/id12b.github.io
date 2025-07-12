@@ -9,7 +9,7 @@
   <script src="https://hcaptcha.com/1/api.js" async defer></script>
 </head>
 <body>
-  <div class="background"></div>
+  <div class="background"></div> 
   <div class="container">
     <div class="card">
       <h1>Welcome to the Future</h1>
@@ -25,3 +25,13 @@
   </div>
 </body>
 </html>
+<form action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+  <div class="h-captcha" data-sitekey="your-hcaptcha-site-key"></div>
+  <input type="email" name="email" placeholder="Your email">
+  <button type="submit" class="btn">Submit</button>
+</form>
+<form action="https://brave-possibility.up.railway.app/verify" method="POST">
+  <div class="h-captcha" data-sitekey="your-real-hcaptcha-site-key"></div>
+  <br>
+  <button type="submit" class="btn">Submit</button>
+</form>
