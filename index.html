@@ -1,18 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>🔥 Ultra Clean Site + hCaptcha</title>
-  <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
-  <script src="https://hcaptcha.com/1/api.js" async defer></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smooth Animated Website</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #111;
+      color: #fff;
+      scroll-behavior: smooth;
+    }
+
+    header, section {
+      min-height: 100vh;
+      padding: 4rem 2rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      opacity: 0;
+      transform: translateY(50px);
+      animation: fadeInUp 1s ease forwards;
+    }
+
+    header {
+      animation-delay: 0.2s;
+    }
+    section:nth-child(2) {
+      background: #222;
+      animation-delay: 0.4s;
+    }
+    section:nth-child(3) {
+      background: #333;
+      animation-delay: 0.6s;
+    }
+
+    h1, h2, p {
+      margin: 1rem 0;
+      text-align: center;
+    }
+
+    a.button {
+      display: inline-block;
+      margin-top: 1rem;
+      padding: 0.75rem 1.5rem;
+      background: #0af;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      transition: transform 0.3s ease;
+    }
+
+    a.button:hover {
+      transform: scale(1.1);
+    }
+
+    @keyframes fadeInUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
 </head>
 <body>
-  <div class="background"></div> 
-  <div class="container">
-    <div class="card">
-      <h1>Welcome to the Future</h1>
-      <p>This website looks like $999 but it’s made with just HTML + CSS 💸</p>
 
+  <header>
+    <h1>Welcome to My Website</h1>
+    <p>This is a simple animated page.</p>
+    <a href="#about" class="button">Learn More</a>
+  </header>
 
+  <section id="about">
+    <h2>About This Page</h2>
+    <p>Everything you see fades in as you scroll.</p>
+  </section>
+
+  <section id="contact">
+    <h2>Contact</h2>
+    <p>Made with ❤️ and CSS animations.</p>
+    <a href="#top" class="button">Back to Top</a>
+  </section>
+
+</body>
+</html>
