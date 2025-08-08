@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<title>Driving Game – Highest Score</title>
+<style>
+:root{
+--bg:#0b0b0f;--bg2:#0e1018;--fg:#e6e6f0;--muted:#9aa3b2;--card:#11131b;--stroke:#212433;
+--accent:#7dd3fc;--accent-2:#38bdf8;--danger:#fb7185;--shadow:0 10px 35px rgba(0,0,0,.45);
+}
+html,body{height:100%}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica,Arial;letter-spacing:.2px;color:var(--fg);background:radial-gradient(1200px 600px at 20% -10%,#15203a 0%,transparent 50%),linear-gradient(180deg,#0a0b12 0%,#0a0b12 50%,#0f1220 100%);display:flex;flex-direction:column;align-items:center;gap:14px;padding:16px}
+h1{margin:6px 0 0;font-size:clamp(18px,3.2vw,28px);font-weight:800;letter-spacing:.3px;background:linear-gradient(90deg,#e5edff,#a5b4fc,#7dd3fc);-webkit-background-clip:text;background-clip:text;color:transparent}
+.wrap{width:min(1400px,98vw);display:grid;grid-template-columns:360px 1fr;gap:16px}
+.panel{background:linear-gradient(180deg,var(--card),#0f121b);border:1px solid var(--stroke);border-radius:16px;padding:14px;box-shadow:var(--shadow)}
+.panel h2{margin:0 0 10px;font-size:16px;color:#cbd5e1;font-weight:700}
+.row{display:grid;grid-template-columns:1fr 160px;gap:10px;align-items:center;margin:10px 0}
+.row label{font-size:13px;color:#cbd5e1}
+select,input[type=number]{width:100%;padding:10px 12px;border-radius:12px;border:1px solid #2a2d3a;background:#0f1117;color:var(--fg);font-size:14px}
+.btn{width:100%;padding:12px 14px;border-radius:12px;border:1px solid #2a2d3a;background:linear-gradient(180deg,#11131b,#0e1016);color:var(--fg);cursor:pointer;font-weight:800;letter-spacing:.3px;transition:transform .06s ease,filter .12s ease}
+.btn.acc{background:linear-gradient(180deg,#0e172a,#0b1222);border-color:#263249}
+.btn:hover{filter:brightness(1.06)}
+.btn:active{transform:translateY(1px)}
+.canvasWrap{position:relative;border-radius:16px;overflow:hidden}
+canvas{display:block;width:100%;height:62vh;max-height:78vh;background:#0b1020;border:1px solid #202334;border-radius:16px;touch-action:none}
+.hud{position:absolute;inset:0;pointer-events:none;padding:12px;font-variant-numeric:tabular-nums}
+.hudTop{display:flex;justify-content:space-between;gap:8px}
+.badge{backdrop-filter:blur(4px);background:linear-gradient(180deg,rgba(13,19,38,.85),rgba(13,19,38,.55));border:1px solid #1e2740;padding:8px 12px;border-radius:999px;font-size:13px;box-shadow:0 4px 18px rgba(0,0,0,.25)}
+.hearts{color:#fda4af}
+.overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,.55);backdrop-filter:blur(3px)}
+.card{background:linear-gradient(180deg,#0d1326,#0b1224);border:1px solid #1f2742;border-radius:16px;padding:18px;width:min(520px,92%);text-align:center;box-shadow:var(--shadow)}
+.card h3{margin:0 0 6px}
+.card p{margin:6px 0;color:#cbd5e1}
+.actions{display:flex;gap:10px;margin-top:12px}
+.actions button{flex:1}
+.hint{color:var(--muted);font-size:12px;text-align:center;margin-top:4px}
+.small{font-size:12px;color:#94a3b8}
+.touch{position:absolute;left:8px;right:8px;bottom:10px;display:none;gap:12px;justify-content:space-between;padding:8px;pointer-events:auto}
+.pad{display:grid;grid-template-columns:56px 56px 56px;grid-template-rows:56px 56px;gap:8px}
+.pad .sp{visibility:hidden}
+.tbtn{width:56px;height:56px;border-radius:14px;border:1px solid #2a2b35;background:#0e111a;color:#cbd5e1;font-weight:800;font-size:16px;touch-action:none}
+.tcol{display:flex;flex-direction:column;gap:8px}
+.twide{width:116px}
+@media (max-width: 980px){.wrap{grid-template-columns:1fr;gap:12px} .row{grid-template-columns:1fr 160px}}
+@media (pointer:coarse), (max-width: 980px){.touch{display:flex}}
+@media (max-width: 360px){.pad{grid-template-columns:44px 44px 44px;grid-template-rows:44px 44px}.tbtn{width:44px;height:44px;font-size:13px}.twide{width:94px}}
+@media (max-width: 260px){.touch{gap:6px;padding:6px}.pad{grid-template-columns:36px 36px 36px;grid-template-rows:36px 36px;gap:6px}.tbtn{width:36px;height:36px;font-size:12px}.twide{width:78px}}
+</style>
+</head>
+<body>
+<h1>Driving Game – Survive and get the Highest Score</h1>
+<div class="wrap">
+<div class="panel" id="controls">
+<h2>Game Settings</h2>
+<div class="row"><label for="difficulty">Difficulty (1–10)</label><select id="difficulty">
+<option value="1">1 – Chill</option>
+<option value="2">2</option>
+<option value="3">3</option>
+<option value="4">4</option>
+<option value="5" selected>5 – Relaxing</option>
+<option value="6">6</option>
+<option value="7">7</option>
+<option value="8">8</option>
+<option value="9">9</option>
+<option value="10">10 – Insane</option>
+</select></div>
+<div class="row"><label for="playerSpeed">Your speed</label><input id="playerSpeed" type="number" min="50" max="800" step="10" inputmode="numeric" value="300"></div>
+<div class="row"><label for="enemySpeed">Enemy speed</label><input id="enemySpeed" type="number" min="50" max="1600" step="10" inputmode="numeric" value="280"></div>
+<div class="row"><label for="hearts">Hearts (max 3)</label><input id="hearts" type="number" min="1" max="3" step="1" inputmode="numeric" value="3"></div>
+<div class="row"><label for="enemyCount">Enemies</label><input id="enemyCount" type="number" min="2" max="60" step="1" inputmode="numeric" value="10"></div>
+<div class="row"><label for="laneWidth">Lane width (px)</label><input id="laneWidth" type="number" min="36" max="160" step="2" inputmode="numeric" value="90"></div>
+<button class="btn acc" id="startBtn">Start Game</button>
+<p class="hint">Move with <b>W/A/S/D</b> or <b>Arrow keys</b>. Pause with <b>P</b>. Top-only spawns + anti-camp.</p>
+<p class="small">Best Score is saved locally.</p>
+</div>
+<div class="canvasWrap panel">
+<canvas id="game" aria-label="Driving game canvas"></canvas>
+<div class="hud">
+<div class="hudTop">
+<div class="badge" id="scoreBadge">Score: 0</div>
+<div class="badge hearts" id="heartsBadge">❤❤❤</div>
+<div class="badge" id="bestBadge">Best: 0</div>
+</div>
+</div>
+<div class="overlay" id="overlay">
+<div class="card">
+<h3 id="overTitle">Game Over</h3>
+<p id="overStats">You scored 0</p>
+<div class="actions">
+<button class="btn" id="restartBtn">Restart</button>
+<button class="btn" id="closeBtn">Close</button>
+</div>
+</div>
+</div>
+<div class="touch" id="touch">
+<div class="pad">
+<button class="tbtn" data-key="ArrowUp">▲</button>
+<div class="sp"></div>
+<button class="tbtn" data-key="ArrowRight">►</button>
+<button class="tbtn" data-key="ArrowLeft">◄</button>
+<div class="sp"></div>
+<button class="tbtn" data-key="ArrowDown">▼</button>
+</div>
+<div class="tcol">
+<button class="tbtn twide" id="tPause">Pause</button>
+<button class="tbtn twide" id="tStart">Start</button>
+</div>
+</div>
+</div>
+</div>
+<script>
+;(function(){
+const canvas=document.getElementById('game');const ctx=canvas.getContext('2d');if(!ctx)return;
+const scoreBadge=document.getElementById('scoreBadge');const heartsBadge=document.getElementById('heartsBadge');const bestBadge=document.getElementById('bestBadge');
+const overlay=document.getElementById('overlay');const overTitle=document.getElementById('overTitle');const overStats=document.getElementById('overStats');
+const restartBtn=document.getElementById('restartBtn');const closeBtn=document.getElementById('closeBtn');const startBtn=document.getElementById('startBtn');
+const tPause=document.getElementById('tPause');const tStart=document.getElementById('tStart');const touchWrap=document.getElementById('touch');
+const controls={difficulty:document.getElementById('difficulty'),playerSpeed:document.getElementById('playerSpeed'),enemySpeed:document.getElementById('enemySpeed'),hearts:document.getElementById('hearts'),enemyCount:document.getElementById('enemyCount'),laneWidth:document.getElementById('laneWidth')};
+let cssW=800,cssH=480,dpr=1;function fitCanvas(){const r=canvas.getBoundingClientRect();const pr=window.devicePixelRatio||1;dpr=Math.max(1,Math.min(3,pr));cssW=Math.max(220,Math.floor(r.width));cssH=Math.max(160,Math.floor(r.height));canvas.width=Math.round(cssW*dpr);canvas.height=Math.round(cssH*dpr);ctx.setTransform(dpr,0,0,dpr,0,0)};new ResizeObserver(fitCanvas).observe(document.body);fitCanvas();
+let state=null;let lastTime=0;let raf=null;const keys=new Set();const held=new Set();
+function isTypingTarget(el){return el&&(el.tagName==='INPUT'||el.tagName==='TEXTAREA'||el.isContentEditable)}
+window.addEventListener('keydown',e=>{if(isTypingTarget(e.target))return;if(e.key==='p'||e.key==='P'){if(e.repeat)return;e.preventDefault();togglePause();return}if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','a','s','d','W','A','S','D'].includes(e.key)){e.preventDefault();keys.add(e.key)}},{passive:false,capture:true});
+window.addEventListener('keyup',e=>{keys.delete(e.key);keys.delete(e.key.toLowerCase());keys.delete(e.key.toUpperCase())},{capture:true});
+window.addEventListener('blur',()=>{keys.clear();held.clear()});
+function bindTouchButton(btn){const key=btn.getAttribute('data-key');const down=ev=>{ev.preventDefault();held.add(key);keys.add(key)};const up=ev=>{ev.preventDefault();held.delete(key);keys.delete(key)};btn.addEventListener('touchstart',down,{passive:false});btn.addEventListener('touchend',up,{passive:false});btn.addEventListener('touchcancel',up,{passive:false});btn.addEventListener('mousedown',down);btn.addEventListener('mouseup',up);btn.addEventListener('mouseleave',up)}
+touchWrap.querySelectorAll('.tbtn[data-key]').forEach(bindTouchButton);tPause&&tPause.addEventListener('click',()=>togglePause());tStart&&tStart.addEventListener('click',()=>{overlay.style.display='none';newGame(getCfg())});
+const DIFF=[
+{esMult:0.55, psAdd:20, countMult:0.6, campChance:0.20, campAccel:0.5, campDecay:1.4, campSpeed:0.05, hearts:3},
+{esMult:0.65, psAdd:10, countMult:0.7, campChance:0.25, campAccel:0.55, campDecay:1.35, campSpeed:0.06, hearts:3},
+{esMult:0.72, psAdd:0, countMult:0.8, campChance:0.30, campAccel:0.6, campDecay:1.3, campSpeed:0.07, hearts:3},
+{esMult:0.80, psAdd:0, countMult:0.9, campChance:0.35, campAccel:0.7, campDecay:1.25, campSpeed:0.08, hearts:3},
+{esMult:0.85, psAdd:0, countMult:0.9, campChance:0.40, campAccel:0.75, campDecay:1.2, campSpeed:0.08, hearts:3},
+{esMult:0.95, psAdd:0, countMult:1.0, campChance:0.48, campAccel:0.85, campDecay:1.1, campSpeed:0.09, hearts:3},
+{esMult:1.05, psAdd:0, countMult:1.1, campChance:0.55, campAccel:1.0, campDecay:1.0, campSpeed:0.10, hearts:3},
+{esMult:1.20, psAdd:0, countMult:1.2, campChance:0.62, campAccel:1.15, campDecay:0.95, campSpeed:0.12, hearts:2},
+{esMult:1.35, psAdd:0, countMult:1.3, campChance:0.70, campAccel:1.3, campDecay:0.9, campSpeed:0.14, hearts:2},
+{esMult:1.55, psAdd:0, countMult:1.45,campChance:0.80, campAccel:1.5, campDecay:0.85, campSpeed:0.16, hearts:1}
+];
+function getCfg(){const d=Math.max(1,Math.min(10,parseInt(controls.difficulty.value,10)||5))-1;const preset=DIFF[d];return{difficulty:d+1,playerSpeed:Math.max(50,Math.min(800,(Number(controls.playerSpeed.value)||300)+preset.psAdd)),enemySpeed:Math.max(50,Math.min(1600,(Number(controls.enemySpeed.value)||280)*preset.esMult)),hearts:Math.max(1,Math.min(3,preset.hearts,Math.floor(Number(controls.hearts.value)||3))),enemyCount:Math.max(2,Math.min(60,Math.round((Number(controls.enemyCount.value)||10)*preset.countMult))),laneWidth:Math.max(36,Math.min(160,Math.floor(Number(controls.laneWidth.value)||90))),campChance:preset.campChance,campAccel:preset.campAccel,campDecay:preset.campDecay,campSpeed:preset.campSpeed}};
+function newGame(cfg){const lanes=Math.max(3,Math.floor(cssW/cfg.laneWidth));const laneW=Math.max(36,Math.floor(cssW/lanes));const roadWidth=lanes*laneW;const roadX=Math.floor((cssW-roadWidth)/2);state={cfg,paused:false,invuln:0,score:0,hearts:cfg.hearts,player:{x:Math.floor(cssW/2-12),y:cssH-90,w:24,h:56,speed:cfg.playerSpeed},enemies:[],lanes,laneW,roadX,roadWidth,lines:[],lastPX:0,still:0,edge:0,camp:0};for(let i=0;i<24;i++){for(let l=0;l<lanes;l++){state.lines.push({x:roadX+l*laneW+laneW/2,y:i*36,w:6,h:20})}}for(let i=0;i<cfg.enemyCount;i++){state.enemies.push(spawnEnemy(state,true))}bestBadge.textContent='Best: '+(Number(localStorage.getItem('bestScore_v1'))||0);heartsBadge.textContent='❤'.repeat(state.hearts);scoreBadge.textContent='Score: 0';overlay.style.display='none';cancelAnimationFrame(raf);lastTime=performance.now();draw();raf=requestAnimationFrame(loop)}
+function spawnEnemy(s,init=false){const playerLane=Math.min(s.lanes-1,Math.max(0,Math.floor((s.player.x-s.roadX)/s.laneW)));let laneIndex=Math.floor(Math.random()*s.lanes);if(!init&&s.camp>0.8&&Math.random()<Math.min(s.cfg.campChance+s.camp*0.08,0.9)) laneIndex=playerLane;const w=22,h=48;const x=s.roadX+laneIndex*s.laneW+(s.laneW-w)/2;const y=init?-(40+Math.random()*140):-h-10;const speed=(s.cfg.enemySpeed*(0.9+Math.random()*0.3))*(1+s.camp*s.cfg.campSpeed);return{x,y,w,h,speed,dir:'down'}}
+function loop(t){const dt=Math.min(0.05,(t-lastTime)/1000);lastTime=t;update(dt);draw();raf=requestAnimationFrame(loop)}
+function update(dt){if(!state||state.paused)return;state.score+=dt;scoreBadge.textContent='Score: '+Math.floor(state.score);if(state.invuln>0)state.invuln-=dt;const lineSpeed=Math.max(110,state.cfg.enemySpeed*0.8);for(const ln of state.lines){ln.y+=lineSpeed*dt;if(ln.y>cssH)ln.y-=cssH+36}const p=state.player;let vx=0,vy=0;if(keys.has('ArrowLeft')||keys.has('a')||keys.has('A'))vx-=1;if(keys.has('ArrowRight')||keys.has('d')||keys.has('D'))vx+=1;if(keys.has('ArrowUp')||keys.has('w')||keys.has('W'))vy-=1;if(keys.has('ArrowDown')||keys.has('s')||keys.has('S'))vy+=1;const mag=Math.hypot(vx,vy)||1;p.x+=(vx/mag)*p.speed*dt;p.y+=(vy/mag)*p.speed*dt;const minX=state.roadX+3;const maxX=state.roadX+state.roadWidth-p.w-3;p.x=Math.max(minX,Math.min(p.x,maxX));p.y=Math.max(6,Math.min(p.y,cssH-p.h-6));const dx=Math.abs(p.x-state.lastPX);state.lastPX=p.x;state.still=dx<1.2?state.still+dt:0;state.edge=p.x<state.roadX+state.laneW*0.7?state.edge+dt:Math.max(0,state.edge-dt*0.8);const pressure=(state.still>1.5?1:0)+(state.edge>1.0?1:0);state.camp=Math.max(0,Math.min(5,state.camp+(pressure>0?dt*state.cfg.campAccel:-dt*state.cfg.campDecay)));for(let i=0;i<state.enemies.length;i++){const e=state.enemies[i];e.y+=e.speed*dt;if(e.y>cssH+60){state.enemies[i]=spawnEnemy(state);continue}if(state.invuln<=0&&aabb(p,e))onHit()}}
+function onHit(){state.hearts-=1;heartsBadge.textContent='❤'.repeat(Math.max(0,state.hearts));state.invuln=1;if(state.hearts<=0){gameOver()}}
+function gameOver(){state.paused=true;cancelAnimationFrame(raf);const score=Math.floor(state.score);const best=Math.max(score,Number(localStorage.getItem('bestScore_v1'))||0);localStorage.setItem('bestScore_v1',best);overTitle.textContent='Game Over';overStats.textContent=`You scored ${score}. Best: ${best}`;bestBadge.textContent='Best: '+best;overlay.style.display='flex'}
+function togglePause(){if(!state)return;state.paused=!state.paused;if(!state.paused){overlay.style.display='none';lastTime=performance.now();raf=requestAnimationFrame(loop)}else{cancelAnimationFrame(raf);const score=Math.floor(state.score);const best=Number(localStorage.getItem('bestScore_v1'))||0;overTitle.textContent='Paused';overStats.textContent=`Score: ${score}. Best: ${best}`;overlay.style.display='flex'}}
+function aabb(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
+function roundedRect(c,x,y,w,h,r,fill,stroke){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();c.fillStyle=fill;c.fill();c.lineWidth=2;c.strokeStyle=stroke;c.stroke()}
+function draw(){if(!state)return;const{roadX,roadWidth}=state;ctx.clearRect(0,0,cssW,cssH);ctx.fillStyle='#0a0f1e';ctx.fillRect(roadX,0,roadWidth,cssH);ctx.fillStyle='#9fb3ff1a';for(const ln of state.lines){ctx.fillRect(ln.x-ln.w/2,ln.y,ln.w,ln.h)}const p=state.player;ctx.save();if(state.invuln>0){ctx.globalAlpha=0.55+0.45*Math.sin(performance.now()/60)}roundedRect(ctx,p.x,p.y,p.w,p.h,6,'#7dd3fc','#1f88ff');ctx.restore();for(const e of state.enemies){roundedRect(ctx,e.x,e.y,e.w,e.h,6,'#fb7185','#b91c1c')}ctx.fillStyle='#1e263a';ctx.fillRect(roadX-6,0,6,cssH);ctx.fillRect(roadX+roadWidth,0,6,cssH)}
+function getCfg(){return{playerSpeed:Number(controls.playerSpeed.value)||300,enemySpeed:Number(controls.enemySpeed.value)||280,hearts:Math.max(1,Math.min(3,Math.floor(Number(controls.hearts.value)||3))),enemyCount:Math.max(2,Math.min(60,Math.floor(Number(controls.enemyCount.value)||10))),laneWidth:Math.max(36,Math.min(160,Math.floor(Number(controls.laneWidth.value)||90)))}}
+startBtn.addEventListener('click',()=>{overlay.style.display='none';newGame(getCfg())});
+restartBtn.addEventListener('click',()=>{overlay.style.display='none';newGame(getCfg())});
+closeBtn.addEventListener('click',()=>{if(state&&state.paused){togglePause()}else{overlay.style.display='none'}});
+newGame(getCfg());
+})();
+</script>
+</body>
+</html>
