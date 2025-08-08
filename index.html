@@ -1,354 +1,368 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Driving Game – Highest Score</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Endless Driving – Highest Score Wins</title>
   <style>
-    :root {
-      --bg: #0b0b0f;
-      --fg: #e6e6f0;
-      --accent: #7dd3fc;
-      --danger: #fb7185;
-      --muted: #6b7280;
-      --card: #14141a;
-      --track: #1f2937;
+    :root{
+      --bg:#0b0f14; --panel:#111923; --accent:#38bdf8; --muted:#96a3b3; --good:#22c55e; --bad:#ef4444;
     }
-    html,body{height:100%;}
-    body{
-      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-      color:var(--fg); background:linear-gradient(180deg, #0a0a0e 0%, #0a0a0e 50%, #0e0e16 100%);
-      display:flex; flex-direction:column; align-items:center; gap:12px; padding:16px;
-    }
-    h1{ margin:6px 0 0; font-size: clamp(18px, 3vw, 24px); letter-spacing:.2px; font-weight:700 }
-    .wrap{ width:min(1100px, 96vw); display:grid; grid-template-columns: 320px 1fr; gap:16px; }
-    .panel{
-      background: var(--card); border:1px solid #22232b; border-radius:16px; padding:14px; box-shadow: 0 8px 30px rgba(0,0,0,.35);
-    }
-    .panel h2{ margin:0 0 8px; font-size:16px; color:#cbd5e1; }
-    .row{ display:grid; grid-template-columns: 1fr 90px; gap:8px; align-items:center; margin:8px 0; }
-    .row label{ font-size:13px; color:#cbd5e1 }
-    input[type="range"]{ width:100%; }
-    input[type="number"]{ width: 100%; padding:6px 8px; border-radius:10px; border:1px solid #2a2b35; background:#0f1117; color:var(--fg); }
-    .btn{ width:100%; padding:10px 12px; border-radius:12px; border:1px solid #2a2b35; background:linear-gradient(180deg,#11131a,#0e1016); color:var(--fg); cursor:pointer; font-weight:700; letter-spacing:.3px }
-    .btn:hover{ filter: brightness(1.08) }
-    .btn:active{ transform: translateY(1px) }
-
-    .canvasWrap{ position:relative; border-radius:16px; overflow:hidden; }
-    canvas{ display:block; width:100%; height:auto; background: #0b1020; border:1px solid #202334; border-radius:16px; }
-
-    .hud{ position:absolute; inset:0; pointer-events:none; padding:12px; font-variant-numeric: tabular-nums; }
-    .hudTop{ display:flex; justify-content:space-between; gap:8px; }
-    .badge{ background:#0d1326; border:1px solid #1f2333; padding:6px 10px; border-radius:999px; font-size:13px; }
-    .hearts{ color:#fda4af }
-
-    .overlay{ position:absolute; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.55); backdrop-filter: blur(2px); }
-    .card{ background:#10131c; border:1px solid #232634; border-radius:16px; padding:18px; width:min(420px, 90%); text-align:center; }
-    .card h3{ margin:0 0 6px; }
-    .card p{ margin:6px 0; color:#cbd5e1 }
-    .actions{ display:flex; gap:8px; margin-top:12px }
-    .actions button{ flex:1; }
-
-    .hint{ color:var(--muted); font-size:12px; text-align:center; margin-top:4px }
-    .small{ font-size:12px; color:#94a3b8; }
-    .link{ color:var(--accent); text-decoration: none; }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:var(--bg);color:#e6edf3;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
+    h1{font-size:1.1rem;margin:0 0 .5rem 0;color:#d6e2f0;font-weight:700}
+    .wrap{display:grid;gap:16px;grid-template-columns:320px 1fr;max-width:1100px;margin:24px auto;padding:0 16px}
+    .panel{background:var(--panel);border:1px solid #1f2a36;border-radius:14px;padding:14px;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+    .controls label{display:block;font-size:.85rem;color:#c9d4e1;margin:10px 0 6px}
+    .controls input{width:100%;padding:8px 10px;border-radius:10px;border:1px solid #2a394a;background:#0c141d;color:#e6edf3}
+    .controls .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .btns{display:flex;gap:8px;margin-top:12px}
+    button{appearance:none;border:1px solid #24475b;background:#0f1a24;color:#e6f2ff;padding:8px 12px;border-radius:10px;font-weight:600;cursor:pointer}
+    button.primary{border-color:#1f9ecb;background:#102838}
+    button:disabled{opacity:.55;cursor:not-allowed}
+    .hint{font-size:.8rem;color:var(--muted);margin-top:10px;line-height:1.4}
+    .gameShell{display:grid;grid-template-columns:1fr auto 1fr;align-items:start}
+    .hud{display:flex;gap:12px;justify-content:center;margin-bottom:8px}
+    .chip{background:#0e1620;border:1px solid #263649;padding:6px 10px;border-radius:999px;font-variant-numeric:tabular-nums}
+    .chip.good{border-color:#235b3c;color:#b6ffd0}
+    .chip.bad{border-color:#63343a;color:#ffc8c8}
+    canvas{background:#0b1016;border:1px solid #1f2a36;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+    .legend{font-size:.8rem;color:var(--muted);text-align:center;margin-top:6px}
+    .roadMark{position:relative}
   </style>
 </head>
 <body>
-  <h1>Driving Game – Survive and get the Highest Score</h1>
   <div class="wrap">
-    <div class="panel" id="controls">
-      <h2>Game Settings</h2>
+    <div class="panel controls">
+      <h1>Setup</h1>
+      <label for="playerSpeed">Your speed (px/s)</label>
+      <input id="playerSpeed" type="number" min="60" max="1200" step="10" value="320">
 
       <div class="row">
-        <label for="playerSpeed">Your speed</label>
-        <input id="playerSpeed" type="number" min="50" max="800" step="10" value="280">
-      </div>
-      <div class="row">
-        <label for="enemySpeed">Enemy speed</label>
-        <input id="enemySpeed" type="number" min="50" max="1200" step="10" value="260">
-      </div>
-      <div class="row">
-        <label for="hearts">Hearts</label>
-        <input id="hearts" type="number" min="1" max="10" step="1" value="3">
-      </div>
-      <div class="row">
-        <label for="enemyCount">Enemies</label>
-        <input id="enemyCount" type="number" min="1" max="20" step="1" value="6">
-      </div>
-      <div class="row">
-        <label for="laneWidth">Lane width (px)</label>
-        <input id="laneWidth" type="number" min="40" max="160" step="10" value="80">
+        <div>
+          <label for="enemySpeed">Enemies speed (px/s)</label>
+          <input id="enemySpeed" type="number" min="60" max="1400" step="10" value="260">
+        </div>
+        <div>
+          <label for="spawnRate">Enemies per second</label>
+          <input id="spawnRate" type="number" min="0.2" max="8" step="0.1" value="1.2">
+        </div>
       </div>
 
-      <button class="btn" id="startBtn">Start Game</button>
-      <p class="hint">Move with <b>W/A/S/D</b> or <b>Arrow keys</b>. Pause with <b>P</b>. Colliding with an enemy costs a heart. Survive to boost your score.</p>
-      <p class="small">Tip: Lower your speed and raise enemy speed for a harder game. Best Score is saved locally.</p>
+      <div class="row">
+        <div>
+          <label for="hearts">Hearts (lives)</label>
+          <input id="hearts" type="number" min="1" max="9" step="1" value="3">
+        </div>
+        <div>
+          <label for="invuln">Invuln on hit (ms)</label>
+          <input id="invuln" type="number" min="0" max="2000" step="50" value="600">
+        </div>
+      </div>
+
+      <div class="btns">
+        <button id="startBtn" class="primary">Start</button>
+        <button id="pauseBtn" disabled>Pause</button>
+        <button id="resumeBtn" disabled>Resume</button>
+        <button id="resetBtn">Reset</button>
+      </div>
+      <div class="hint">
+        Controls: ← → or A D to steer. P to pause/resume. Colliding costs a heart. When hearts hit 0, game over. Highest score is saved.
+      </div>
     </div>
 
-    <div class="canvasWrap panel">
-      <canvas id="game" width="800" height="600" aria-label="Driving game canvas"></canvas>
+    <div class="panel game">
       <div class="hud">
-        <div class="hudTop">
-          <div class="badge" id="scoreBadge">Score: 0</div>
-          <div class="badge hearts" id="heartsBadge">❤❤❤</div>
-          <div class="badge" id="bestBadge">Best: 0</div>
-        </div>
+        <div class="chip" id="scoreChip">Score: 0</div>
+        <div class="chip good" id="hiChip">High: 0</div>
+        <div class="chip bad" id="heartsChip">Hearts: 3</div>
       </div>
-      <div class="overlay" id="overlay">
-        <div class="card">
-          <h3 id="overTitle">Game Over</h3>
-          <p id="overStats">You scored 0</p>
-          <div class="actions">
-            <button class="btn" id="restartBtn">Restart</button>
-            <button class="btn" id="closeBtn">Close</button>
-          </div>
+      <div class="gameShell">
+        <div></div>
+        <div>
+          <canvas id="game" width="420" height="640" aria-label="Driving game area"></canvas>
+          <div class="legend">Highest score wins. Tweak settings on the left.</div>
         </div>
+        <div></div>
       </div>
     </div>
   </div>
 
   <script>
-  (function(){
+  (function() {
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
 
-    const scoreBadge = document.getElementById('scoreBadge');
-    const heartsBadge = document.getElementById('heartsBadge');
-    const bestBadge = document.getElementById('bestBadge');
-    const overlay = document.getElementById('overlay');
-    const overTitle = document.getElementById('overTitle');
-    const overStats = document.getElementById('overStats');
-    const restartBtn = document.getElementById('restartBtn');
-    const closeBtn = document.getElementById('closeBtn');
+    // UI elements
+    const el = id => document.getElementById(id);
+    const startBtn = el('startBtn'), pauseBtn = el('pauseBtn'), resumeBtn = el('resumeBtn'), resetBtn = el('resetBtn');
+    const scoreChip = el('scoreChip'), hiChip = el('hiChip'), heartsChip = el('heartsChip');
+    const inPlayerSpeed = el('playerSpeed'), inEnemySpeed = el('enemySpeed'), inSpawnRate = el('spawnRate');
+    const inHearts = el('hearts'), inInvuln = el('invuln');
 
-    const controls = {
-      playerSpeed: document.getElementById('playerSpeed'),
-      enemySpeed: document.getElementById('enemySpeed'),
-      hearts: document.getElementById('hearts'),
-      enemyCount: document.getElementById('enemyCount'),
-      laneWidth: document.getElementById('laneWidth'),
-    };
-    const startBtn = document.getElementById('startBtn');
+    // Game state
+    let state = null; // set by reset()
+    const rand = (min, max) => Math.random() * (max - min) + min;
 
-    function resizeToParent() {
-      const wrap = canvas.parentElement;
-      const w = wrap.clientWidth - 2;
-      const ratio = canvas.height / canvas.width;
-      canvas.style.width = w + 'px';
-      canvas.style.height = Math.round(w * ratio) + 'px';
-    }
-    window.addEventListener('resize', resizeToParent);
-    resizeToParent();
-
-    let state = null;
-    let lastTime = 0;
-    let raf = null;
-
-    const keys = new Set();
-    window.addEventListener('keydown', (e)=>{
-      if(e.key === 'p' || e.key === 'P'){
-        if(e.repeat) return;
-        e.preventDefault();
-        togglePause();
-        return;
-      }
-      if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','a','s','d','W','A','S','D'].includes(e.key)){
-        e.preventDefault();
-        keys.add(e.key);
-      }
-    }, {passive:false});
-    window.addEventListener('keyup', (e)=> keys.delete(e.key));
-
-    function newGame(cfg){
-      const lanes = Math.max(3, Math.floor(canvas.width / cfg.laneWidth));
-      const roadWidth = lanes * cfg.laneWidth;
-      const roadX = (canvas.width - roadWidth)/2;
-
+    function reset() {
+      const hi = +localStorage.getItem('driving_highscore') || 0;
       state = {
-        cfg,
+        running: false,
         paused: false,
-        invuln: 0,
+        w: canvas.width,
+        h: canvas.height,
+        t: 0,
+        lastSpawn: 0,
         score: 0,
-        hearts: cfg.hearts,
-        player: { x: canvas.width/2 - 15, y: canvas.height - 90, w: 30, h: 60, speed: cfg.playerSpeed },
+        high: hi,
+        hearts: +inHearts.value || 3,
+        invulnFor: +inInvuln.value || 600,
+        invulnUntil: 0,
+        player: {
+          x: canvas.width/2 - 18,
+          y: canvas.height - 120,
+          w: 36,
+          h: 64,
+          speed: +inPlayerSpeed.value || 320,
+        },
         enemies: [],
-        lanes, roadX, roadWidth,
-        lines: [],
+        enemySpeed: +inEnemySpeed.value || 260,
+        spawnRate: +inSpawnRate.value || 1.2, // per second
+        keys: {left:false,right:false},
       };
+      updateHUD();
+      drawSplash('Press Start');
+    }
 
-      for(let i=0;i<20;i++){
-        state.lines.push({ x: roadX + cfg.laneWidth/2, y: i*40, w: 8, h: 24 });
-        for(let l=1; l<lanes; l++){
-          state.lines.push({ x: roadX + l*cfg.laneWidth + cfg.laneWidth/2, y: i*40, w: 8, h: 24 });
+    function start() {
+      if (state.running) return;
+      state.running = true;
+      state.paused = false;
+      startBtn.disabled = true;
+      pauseBtn.disabled = false;
+      resumeBtn.disabled = true;
+      state.t = performance.now();
+      requestAnimationFrame(loop);
+    }
+
+    function pause() {
+      if (!state.running || state.paused) return;
+      state.paused = true;
+      pauseBtn.disabled = true;
+      resumeBtn.disabled = false;
+      drawSplash('Paused');
+    }
+
+    function resume() {
+      if (!state.running || !state.paused) return;
+      state.paused = false;
+      pauseBtn.disabled = false;
+      resumeBtn.disabled = true;
+      state.t = performance.now();
+      requestAnimationFrame(loop);
+    }
+
+    function gameOver() {
+      state.running = false;
+      pauseBtn.disabled = true;
+      resumeBtn.disabled = true;
+      startBtn.disabled = false;
+      if (state.score > state.high) {
+        state.high = state.score;
+        localStorage.setItem('driving_highscore', String(state.high));
+      }
+      drawSplash('Game Over');
+      updateHUD();
+    }
+
+    function loop(now) {
+      if (!state.running) return;
+      if (state.paused) return;
+      const dt = Math.min(0.033, (now - state.t) / 1000); // clamp for stability
+      state.t = now;
+
+      update(dt);
+      render();
+      requestAnimationFrame(loop);
+    }
+
+    function update(dt) {
+      // scoring
+      state.score += Math.floor(60 * dt); // ~1 point per frame at 60fps
+
+      // player movement
+      const p = state.player;
+      const move = p.speed * dt;
+      if (state.keys.left) p.x -= move;
+      if (state.keys.right) p.x += move;
+      p.x = Math.max(12, Math.min(state.w - p.w - 12, p.x));
+
+      // enemy spawning
+      state.lastSpawn += dt;
+      const interval = 1 / Math.max(0.05, state.spawnRate);
+      if (state.lastSpawn >= interval) {
+        state.lastSpawn = 0;
+        spawnEnemy();
+      }
+
+      // move enemies
+      const es = state.enemySpeed * dt;
+      for (const e of state.enemies) {
+        e.y += es;
+      }
+      // remove offscreen
+      state.enemies = state.enemies.filter(e => e.y < state.h + 40);
+
+      // collisions
+      if (performance.now() > state.invulnUntil) {
+        for (const e of state.enemies) {
+          if (rectsOverlap(p, e)) {
+            state.hearts -= 1;
+            state.invulnUntil = performance.now() + state.invulnFor;
+            if (state.hearts <= 0) {
+              gameOver();
+            }
+            break;
+          }
         }
       }
 
-      for(let i=0;i<cfg.enemyCount;i++) state.enemies.push(spawnEnemy(state, true));
-
-      bestBadge.textContent = 'Best: ' + (Number(localStorage.getItem('bestScore_v1')) || 0);
-      heartsBadge.textContent = '❤'.repeat(state.hearts);
-      scoreBadge.textContent = 'Score: 0';
-
-      overlay.style.display = 'none';
-      cancelAnimationFrame(raf);
-      lastTime = performance.now();
-      raf = requestAnimationFrame(loop);
+      updateHUD();
     }
 
-    function spawnEnemy(s, initial=false){
-      const laneIndex = Math.floor(Math.random()*s.lanes);
-      const x = s.roadX + laneIndex * s.cfg.laneWidth + (s.cfg.laneWidth-28)/2;
-      const y = initial ? -Math.random()*canvas.height - 40 : -60;
-      const base = s.cfg.enemySpeed;
-      const speed = base * (0.9 + Math.random()*0.3);
-      return { x, y, w: 28, h: 54, speed };
+    function spawnEnemy() {
+      const lanePadding = 12;
+      const ew = rand(28, 44), eh = rand(42, 70);
+      const ex = rand(lanePadding, state.w - lanePadding - ew);
+      const color = `hsl(${Math.floor(rand(0,360))} 70% 60%)`;
+      state.enemies.push({x:ex, y:-eh, w:ew, h:eh, color});
     }
 
-    function loop(t){
-      const dt = Math.min(0.05, (t - lastTime)/1000);
-      lastTime = t;
-      update(dt);
-      draw();
-      raf = requestAnimationFrame(loop);
-    }
-
-    function update(dt){
-      if(!state || state.paused) return;
-      state.score += dt * (1 + state.cfg.enemySpeed/400);
-      scoreBadge.textContent = 'Score: ' + Math.floor(state.score);
-      if(state.invuln > 0) state.invuln -= dt;
-      const lineSpeed = Math.max(120, state.cfg.enemySpeed * 0.8);
-      for(const ln of state.lines){ ln.y += lineSpeed * dt; if(ln.y > canvas.height) ln.y -= canvas.height + 40; }
-      const p = state.player;
-      let vx = 0, vy = 0;
-      if(keys.has('ArrowLeft') || keys.has('a') || keys.has('A')) vx -= 1;
-      if(keys.has('ArrowRight') || keys.has('d') || keys.has('D')) vx += 1;
-      if(keys.has('ArrowUp') || keys.has('w') || keys.has('W')) vy -= 1;
-      if(keys.has('ArrowDown') || keys.has('s') || keys.has('S')) vy += 1;
-      const mag = Math.hypot(vx,vy) || 1;
-      p.x += (vx/mag) * p.speed * dt;
-      p.y += (vy/mag) * p.speed * dt;
-      p.x = Math.max(state.roadX+4, Math.min(p.x, state.roadX + state.roadWidth - p.w - 4));
-      p.y = Math.max(8, Math.min(p.y, canvas.height - p.h - 8));
-      for(let i=0;i<state.enemies.length;i++){
-        const e = state.enemies[i];
-        e.y += e.speed * dt;
-        if(e.y > canvas.height + 60){ state.enemies[i] = spawnEnemy(state); continue; }
-        if(state.invuln <= 0 && aabb(p,e)) onHit();
-      }
-    }
-
-    function onHit(){
-      state.hearts -= 1;
-      heartsBadge.textContent = '❤'.repeat(Math.max(0,state.hearts));
-      state.invuln = 1.0;
-      if(state.hearts <= 0){
-        gameOver();
-      }
-    }
-
-    function gameOver(){
-      state.paused = true;
-      cancelAnimationFrame(raf);
-      const score = Math.floor(state.score);
-      const best = Math.max(score, Number(localStorage.getItem('bestScore_v1')) || 0);
-      localStorage.setItem('bestScore_v1', best);
-      overTitle.textContent = 'Game Over';
-      overStats.textContent = `You scored ${score}. Best: ${best}`;
-      bestBadge.textContent = 'Best: ' + best;
-      overlay.style.display = 'flex';
-    }
-
-    function togglePause(){
-      if(!state) return;
-      state.paused = !state.paused;
-      if(!state.paused){
-        hideOverlay();
-        lastTime = performance.now();
-        raf = requestAnimationFrame(loop);
-      } else {
-        cancelAnimationFrame(raf);
-        showPause();
-      }
-    }
-
-    function showPause(){
-      if(!state) return;
-      overTitle.textContent = 'Paused';
-      const score = Math.floor(state.score);
-      const best = Number(localStorage.getItem('bestScore_v1')) || 0;
-      overStats.textContent = `Score: ${score}. Best: ${best}`;
-      overlay.style.display = 'flex';
-    }
-
-    function hideOverlay(){ overlay.style.display = 'none'; }
-
-    function draw(){
-      if(!state) return;
-      const { roadX, roadWidth } = state;
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      ctx.fillStyle = '#0a0f1e';
-      ctx.fillRect(roadX, 0, roadWidth, canvas.height);
-      ctx.fillStyle = '#9fb3ff1a';
-      for(const ln of state.lines){
-        ctx.fillRect(ln.x - ln.w/2, ln.y, ln.w, ln.h);
-      }
-      const p = state.player;
-      ctx.save();
-      if(state.invuln > 0){
-        ctx.globalAlpha = 0.55 + 0.45*Math.sin(performance.now()/60);
-      }
-      roundedRect(ctx, p.x, p.y, p.w, p.h, 6, '#7dd3fc', '#1f88ff');
-      ctx.restore();
-      for(const e of state.enemies){
-        roundedRect(ctx, e.x, e.y, e.w, e.h, 6, '#fb7185', '#b91c1c');
-      }
-      ctx.fillStyle = '#1e263a';
-      ctx.fillRect(roadX-8,0,8,canvas.height);
-      ctx.fillRect(roadX+roadWidth,0,8,canvas.height);
-    }
-
-    function aabb(a,b){
+    function rectsOverlap(a,b){
       return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
     }
 
-    function roundedRect(ctx, x, y, w, h, r, fill, stroke){
+    function render() {
+      const w = state.w, h = state.h;
+      // background road
+      ctx.clearRect(0,0,w,h);
+      // road gradient
+      const g = ctx.createLinearGradient(0,0,0,h);
+      g.addColorStop(0,'#0a1018');
+      g.addColorStop(1,'#0b1824');
+      ctx.fillStyle = g;
+      ctx.fillRect(0,0,w,h);
+
+      // lane markings
+      ctx.strokeStyle = '#1b2a3a';
+      ctx.lineWidth = 4;
+      for (let i=1;i<=4;i++){ // light lane guides
+        const x = (w/5) * i;
+        ctx.beginPath();
+        ctx.moveTo(x,0); ctx.lineTo(x,h);
+        ctx.stroke();
+      }
+
+      // dashed center stripes scrolling with score
+      ctx.setLineDash([14,16]);
+      ctx.lineDashOffset = - (state.score % 30);
+      ctx.strokeStyle = '#33506e';
+      ctx.lineWidth = 6;
       ctx.beginPath();
-      ctx.moveTo(x+r, y);
-      ctx.arcTo(x+w, y, x+w, y+h, r);
-      ctx.arcTo(x+w, y+h, x, y+h, r);
-      ctx.arcTo(x, y+h, x, y, r);
-      ctx.arcTo(x, y, x+w, y, r);
-      ctx.closePath();
-      ctx.fillStyle = fill; ctx.fill();
-      ctx.lineWidth = 2; ctx.strokeStyle = stroke; ctx.stroke();
+      ctx.moveTo(w/2,0); ctx.lineTo(w/2,h);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // enemies
+      for (const e of state.enemies) {
+        drawCar(e.x,e.y,e.w,e.h,e.color);
+      }
+
+      // player (blink when invuln)
+      const blinking = performance.now() < state.invulnUntil;
+      const alpha = blinking ? (0.4 + 0.6*Math.sin(performance.now()/50)) : 1;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      drawCar(state.player.x, state.player.y, state.player.w, state.player.h, '#38bdf8');
+      ctx.restore();
     }
 
-    function getCfg(){
-      return {
-        playerSpeed: clamp(Number(controls.playerSpeed.value)||280, 50, 800),
-        enemySpeed: clamp(Number(controls.enemySpeed.value)||260, 50, 1200),
-        hearts: clamp(Math.floor(Number(controls.hearts.value)||3), 1, 10),
-        enemyCount: clamp(Math.floor(Number(controls.enemyCount.value)||6), 1, 20),
-        laneWidth: clamp(Math.floor(Number(controls.laneWidth.value)||80), 40, 160)
-      };
+    function drawCar(x,y,w,h,color){
+      // body
+      ctx.fillStyle = color;
+      roundRect(ctx,x,y,w,h,10,true,false);
+      // windshield
+      ctx.fillStyle = 'rgba(255,255,255,.15)';
+      roundRect(ctx,x+6,y+8,w-12,h/3,6,true,false);
+      // wheels
+      ctx.fillStyle = '#0c0c0c';
+      ctx.fillRect(x-4,y+8,6,18);
+      ctx.fillRect(x+w-2,y+8,6,18);
+      ctx.fillRect(x-4,y+h-26,6,18);
+      ctx.fillRect(x+w-2,y+h-26,6,18);
     }
 
-    function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+    function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
+      if (typeof radius === 'number') radius = {tl: radius, tr: radius, br: radius, bl: radius};
+      ctx.beginPath();
+      ctx.moveTo(x + radius.tl, y);
+      ctx.lineTo(x + width - radius.tr, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius.tr);
+      ctx.lineTo(x + width, y + height - radius.br);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius.br, y + height);
+      ctx.lineTo(x + radius.bl, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius.bl);
+      ctx.lineTo(x, y + radius.tl);
+      ctx.quadraticCurveTo(x, y, x + radius.tl, y);
+      if (fill) ctx.fill();
+      if (stroke) ctx.stroke();
+    }
 
-    startBtn.addEventListener('click', ()=>{
-      hideOverlay();
-      newGame(getCfg());
+    function drawSplash(text){
+      render();
+      ctx.fillStyle = 'rgba(0,0,0,.55)';
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle = '#e6edf3';
+      ctx.font = '700 28px system-ui,Segoe UI,Roboto';
+      ctx.textAlign = 'center';
+      ctx.fillText(text, canvas.width/2, canvas.height/2 - 6);
+      ctx.font = '400 14px system-ui,Segoe UI,Roboto';
+      ctx.fillStyle = '#a9b8c7';
+      ctx.fillText('Press Resume or Start to continue', canvas.width/2, canvas.height/2 + 20);
+    }
+
+    function updateHUD(){
+      scoreChip.textContent = 'Score: ' + state.score;
+      hiChip.textContent = 'High: ' + Math.max(state.high, state.score);
+      heartsChip.textContent = 'Hearts: ' + state.hearts;
+    }
+
+    // Input
+    window.addEventListener('keydown', (e)=>{
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') state.keys.left = true;
+      if (e.code === 'ArrowRight' || e.code === 'KeyD') state.keys.right = true;
+      if (e.code === 'KeyP') (state.paused?resume():pause());
+    });
+    window.addEventListener('keyup', (e)=>{
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') state.keys.left = false;
+      if (e.code === 'ArrowRight' || e.code === 'KeyD') state.keys.right = false;
     });
 
-    restartBtn.addEventListener('click', ()=>{
-      hideOverlay();
-      newGame(getCfg());
-    });
-    closeBtn.addEventListener('click', ()=> hideOverlay());
+    // Buttons
+    startBtn.addEventListener('click', start);
+    pauseBtn.addEventListener('click', pause);
+    resumeBtn.addEventListener('click', resume);
+    resetBtn.addEventListener('click', ()=>{ reset(); });
 
-    newGame(getCfg());
+    // Changing settings mid-run takes effect immediately
+    inPlayerSpeed.addEventListener('input', ()=> state.player.speed = +inPlayerSpeed.value || 320);
+    inEnemySpeed.addEventListener('input', ()=> state.enemySpeed = +inEnemySpeed.value || 260);
+    inSpawnRate.addEventListener('input', ()=> state.spawnRate = +inSpawnRate.value || 1.2);
+    inHearts.addEventListener('input', ()=> state.hearts = Math.max(0, +inHearts.value||0));
+    inInvuln.addEventListener('input', ()=> state.invulnFor = Math.max(0, +inInvuln.value||0));
+
+    // Init
+    reset();
   })();
   </script>
 </body>
