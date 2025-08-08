@@ -126,23 +126,26 @@
       tPause.addEventListener('click',()=>togglePause());
       tStart.addEventListener('click',()=>{overlay.style.display='none';newGame(getCfg())});
       const modes=[
-        {mult:0.5,enemies:6,hearts:5,ps:260},
-        {mult:0.7,enemies:7,hearts:4,ps:270},
-        {mult:0.85,enemies:8,hearts:4,ps:280},
-        {mult:1.0,enemies:9,hearts:3,ps:290},
-        {mult:1.15,enemies:10,hearts:3,ps:300},
-        {mult:1.3,enemies:12,hearts:3,ps:310},
-        {mult:1.5,enemies:14,hearts:3,ps:320},
-        {mult:1.7,enemies:16,hearts:2,ps:330},
-        {mult:1.9,enemies:18,hearts:2,ps:340},
-        {mult:2.2,enemies:22,hearts:1,ps:360}
+        {mult:0.6,enemies:6,hearts:3,ps:260,spawn:0.6,size:1.0,hunt:1.0},
+        {mult:0.75,enemies:7,hearts:3,ps:270,spawn:0.7,size:1.0,hunt:1.1},
+        {mult:0.9,enemies:8,hearts:3,ps:280,spawn:0.8,size:1.0,hunt:1.2},
+        {mult:1.0,enemies:9,hearts:3,ps:290,spawn:0.9,size:1.0,hunt:1.3},
+        {mult:1.15,enemies:10,hearts:3,ps:300,spawn:1.0,size:1.0,hunt:1.4},
+        {mult:1.3,enemies:12,hearts:3,ps:310,spawn:1.2,size:0.95,hunt:1.6},
+        {mult:1.5,enemies:14,hearts:3,ps:320,spawn:1.4,size:0.9,hunt:1.8},
+        {mult:1.7,enemies:16,hearts:2,ps:330,spawn:1.7,size:0.85,hunt:2.0},
+        {mult:1.9,enemies:18,hearts:2,ps:340,spawn:2.0,size:0.8,hunt:2.3},
+        {mult:2.2,enemies:22,hearts:1,ps:360,spawn:2.5,size:0.75,hunt:2.7}
       ];
       function applyDifficulty(base){const i=Math.max(1,Math.min(10,parseInt(controls.difficulty.value,10)))-1;const m=modes[i];return{
         playerSpeed:Math.max(50,Math.min(800,(Number(controls.playerSpeed.value)||300)+(m.ps-300))),
         enemySpeed:Math.max(50,Math.min(1600,(Number(controls.enemySpeed.value)||300)*m.mult)),
-        hearts:Math.max(1,Math.min(10,m.hearts)),
+        hearts:Math.max(1,Math.min(3,m.hearts)),
         enemyCount:Math.max(2,Math.min(40,Math.round((Number(controls.enemyCount.value)||10)*m.mult*(m.enemies/10)))),
-        laneWidth:Math.max(36,Math.min(160,Math.floor(Number(controls.laneWidth.value)||90)))
+        laneWidth:Math.max(36,Math.min(160,Math.floor(Number(controls.laneWidth.value)||90))),
+        spawnRate:Math.max(0.2,Math.min(6,1.0*m.spawn)),
+        sizeScale:m.size,
+        huntMult:m.hunt
       }}
       function newGame(cfgBase){
         const cfg=applyDifficulty(cfgBase);
@@ -150,15 +153,25 @@
         const laneW=Math.max(36,Math.floor(cssW/lanes));
         const roadWidth=lanes*laneW;
         const roadX=Math.floor((cssW-roadWidth)/2);
-        state={cfg,paused:false,invuln:0,score:0,hearts:cfg.hearts,player:{x:Math.floor(cssW/2-12),y:cssH-90,w:24,h:56,speed:cfg.playerSpeed},enemies:[],lanes,laneW,roadX,roadWidth,lines:[]};
+        state={cfg,paused:false,invuln:0,score:0,hearts:cfg.hearts,player:{x:Math.floor(cssW/2-12),y:cssH-90,w:24,h:56,speed:cfg.playerSpeed},enemies:[],lanes,laneW,roadX,roadWidth,lines:[],spawnClock:0,huntClock:0,lastPX:0,still:0,edge:0,camp:0};
         keys.clear();held.clear();
         for(let i=0;i<24;i++){for(let l=0;l<lanes;l++){state.lines.push({x:roadX+l*laneW+laneW/2,y:i*36,w:6,h:20})}}
-        for(let i=0;i<cfg.enemyCount;i++){if(i%2===0)state.enemies.push(spawnVertical(state,true));else state.enemies.push(spawnHorizontal(state,true))}
+        for(let i=0;i<cfg.enemyCount;i++){state.enemies.push(spawnVertical(state,true))}
         bestBadge.textContent='Best: '+(Number(localStorage.getItem('bestScore_v1'))||0);heartsBadge.textContent='❤'.repeat(state.hearts);scoreBadge.textContent='Score: 0';overlay.style.display='none';
         cancelAnimationFrame(raf);lastTime=performance.now();draw();raf=requestAnimationFrame(loop);
       }
-      function spawnVertical(s,initial=false){const laneIndex=Math.floor(Math.random()*s.lanes);const x=s.roadX+laneIndex*s.laneW+(s.laneW-22)/2;const y=initial?-Math.random()*cssH-40:-50;const speed=s.cfg.enemySpeed*(0.9+Math.random()*0.3);return{x,y,w:22,h:48,speed,dir:'down'}}
-      function spawnHorizontal(s,initial=false){const yMin=6;const yMax=cssH-60;const y=Math.floor(yMin+Math.random()*(yMax-yMin));const x=s.roadX-60;const speed=s.cfg.enemySpeed*(0.8+Math.random()*0.4);return{x,y,w:48,h:22,speed,dir:'right'}}
+      function spawnVertical(s,initial=false){
+        const laneIndex=Math.floor(Math.random()*s.lanes);
+        const w=Math.round(22*s.cfg.sizeScale),h=Math.round(48*s.cfg.sizeScale);
+        const x=s.roadX+laneIndex*s.laneW+(s.laneW-w)/2;
+        const y=initial?-Math.random()*cssH-40:-h-10;
+        const speed=s.cfg.enemySpeed*(0.9+Math.random()*0.3);
+        return{x,y,w,h,speed,dir:'down'};
+      }
+      function spawnHomingAtPlayer(s,boost=1){
+        const lane=Math.min(s.lanes-1,Math.max(0,Math.floor((s.player.x-s.roadX)/s.laneW)));
+        const e=spawnVertical(s,false);e.x=s.roadX+lane*s.laneW+(s.laneW-e.w)/2;e.speed*=1.15*boost;return e;
+      }
       function loop(t){const dt=Math.min(0.05,(t-lastTime)/1000);lastTime=t;update(dt);draw();raf=requestAnimationFrame(loop)}
       function update(dt){
         if(!state||state.paused)return;
@@ -174,10 +187,13 @@
         const mag=Math.hypot(vx,vy)||1;p.x+=(vx/mag)*p.speed*dt;p.y+=(vy/mag)*p.speed*dt;
         const minX=state.roadX+3;const maxX=state.roadX+state.roadWidth-p.w-3;
         p.x=Math.max(minX,Math.min(p.x,maxX));p.y=Math.max(6,Math.min(p.y,cssH-p.h-6));
+        state.spawnClock+=dt;const interval=1/Math.max(0.2,state.cfg.spawnRate);while(state.spawnClock>=interval){state.spawnClock-=interval;state.enemies.push(spawnVertical(state))}
+        const dx=Math.abs(p.x-state.lastPX);state.lastPX=p.x;state.still=dx<1.2?state.still+dt:0;state.edge=p.x<state.roadX+state.laneW*0.7?state.edge+dt:Math.max(0,state.edge-dt*0.8);state.camp=Math.max(0,Math.min(5,state.camp+((state.still>1.8?1:0)+(state.edge>1.0?1:0)>0?dt*1.2:-dt*0.9)));
+        state.huntClock+=dt*(1+state.camp*state.cfg.huntMult);while(state.huntClock>=0.6){state.huntClock-=0.6;state.enemies.push(spawnHomingAtPlayer(state,1+state.camp*0.25))}
         for(let i=0;i<state.enemies.length;i++){
           const e=state.enemies[i];
-          if(e.dir==='down'){e.y+=e.speed*dt;if(e.y>cssH+60){state.enemies[i]=spawnVertical(state);continue}}
-          else{e.x+=e.speed*dt;if(e.x>state.roadX+state.roadWidth+80){state.enemies[i]=spawnHorizontal(state);continue}}
+          e.y+=e.speed*dt;
+          if(e.y>cssH+60){state.enemies[i]=spawnVertical(state);continue}
           if(state.invuln<=0&&aabb(p,e))onHit();
         }
       }
@@ -187,7 +203,7 @@
       function aabb(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
       function roundedRect(c,x,y,w,h,r,fill,stroke){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();c.fillStyle=fill;c.fill();c.lineWidth=2;c.strokeStyle=stroke;c.stroke()}
       function draw(){if(!state)return;const{roadX,roadWidth}=state;ctx.clearRect(0,0,cssW,cssH);ctx.fillStyle='#0a0f1e';ctx.fillRect(roadX,0,roadWidth,cssH);ctx.fillStyle='#9fb3ff1a';for(const ln of state.lines){ctx.fillRect(ln.x-ln.w/2,ln.y,ln.w,ln.h)}const p=state.player;ctx.save();if(state.invuln>0){ctx.globalAlpha=0.55+0.45*Math.sin(performance.now()/60)}roundedRect(ctx,p.x,p.y,p.w,p.h,6,'#7dd3fc','#1f88ff');ctx.restore();for(const e of state.enemies){roundedRect(ctx,e.x,e.y,e.w,e.h,6,'#fb7185','#b91c1c')}ctx.fillStyle='#1e263a';ctx.fillRect(roadX-6,0,6,cssH);ctx.fillRect(roadX+roadWidth,0,6,cssH)}
-      function getCfg(){return{playerSpeed:Number(controls.playerSpeed.value)||300,enemySpeed:Number(controls.enemySpeed.value)||300,hearts:Math.floor(Number(controls.hearts.value)||3),enemyCount:Math.floor(Number(controls.enemyCount.value)||10),laneWidth:Math.floor(Number(controls.laneWidth.value)||90)}}
+      function getCfg(){return{playerSpeed:Number(controls.playerSpeed.value)||300,enemySpeed:Number(controls.enemySpeed.value)||300,hearts:Math.min(3,Math.floor(Number(controls.hearts.value)||3)),enemyCount:Math.floor(Number(controls.enemyCount.value)||10),laneWidth:Math.floor(Number(controls.laneWidth.value)||90)}}
       startBtn.addEventListener('click',()=>{overlay.style.display='none';newGame(getCfg())});
       restartBtn.addEventListener('click',()=>{overlay.style.display='none';newGame(getCfg())});
       closeBtn.addEventListener('click',()=>{if(state&&state.paused){togglePause()}else{overlay.style.display='none'}});
