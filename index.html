@@ -3,27 +3,353 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Smooth Animated Website</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>Driving Game – Highest Score</title>
+  <style>
+    :root {
+      --bg: #0b0b0f;
+      --fg: #e6e6f0;
+      --accent: #7dd3fc;
+      --danger: #fb7185;
+      --muted: #6b7280;
+      --card: #14141a;
+      --track: #1f2937;
+    }
+    html,body{height:100%;}
+    body{
+      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      color:var(--fg); background:linear-gradient(180deg, #0a0a0e 0%, #0a0a0e 50%, #0e0e16 100%);
+      display:flex; flex-direction:column; align-items:center; gap:12px; padding:16px;
+    }
+    h1{ margin:6px 0 0; font-size: clamp(18px, 3vw, 24px); letter-spacing:.2px; font-weight:700 }
+    .wrap{ width:min(1100px, 96vw); display:grid; grid-template-columns: 320px 1fr; gap:16px; }
+    .panel{
+      background: var(--card); border:1px solid #22232b; border-radius:16px; padding:14px; box-shadow: 0 8px 30px rgba(0,0,0,.35);
+    }
+    .panel h2{ margin:0 0 8px; font-size:16px; color:#cbd5e1; }
+    .row{ display:grid; grid-template-columns: 1fr 90px; gap:8px; align-items:center; margin:8px 0; }
+    .row label{ font-size:13px; color:#cbd5e1 }
+    input[type="range"]{ width:100%; }
+    input[type="number"]{ width: 100%; padding:6px 8px; border-radius:10px; border:1px solid #2a2b35; background:#0f1117; color:var(--fg); }
+    .btn{ width:100%; padding:10px 12px; border-radius:12px; border:1px solid #2a2b35; background:linear-gradient(180deg,#11131a,#0e1016); color:var(--fg); cursor:pointer; font-weight:700; letter-spacing:.3px }
+    .btn:hover{ filter: brightness(1.08) }
+    .btn:active{ transform: translateY(1px) }
+
+    .canvasWrap{ position:relative; border-radius:16px; overflow:hidden; }
+    canvas{ display:block; width:100%; height:auto; background: #0b1020; border:1px solid #202334; border-radius:16px; }
+
+    .hud{ position:absolute; inset:0; pointer-events:none; padding:12px; font-variant-numeric: tabular-nums; }
+    .hudTop{ display:flex; justify-content:space-between; gap:8px; }
+    .badge{ background:#0d1326; border:1px solid #1f2333; padding:6px 10px; border-radius:999px; font-size:13px; }
+    .hearts{ color:#fda4af }
+
+    .overlay{ position:absolute; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.55); backdrop-filter: blur(2px); }
+    .card{ background:#10131c; border:1px solid #232634; border-radius:16px; padding:18px; width:min(420px, 90%); text-align:center; }
+    .card h3{ margin:0 0 6px; }
+    .card p{ margin:6px 0; color:#cbd5e1 }
+    .actions{ display:flex; gap:8px; margin-top:12px }
+    .actions button{ flex:1; }
+
+    .hint{ color:var(--muted); font-size:12px; text-align:center; margin-top:4px }
+    .small{ font-size:12px; color:#94a3b8; }
+    .link{ color:var(--accent); text-decoration: none; }
+  </style>
 </head>
 <body>
+  <h1>Driving Game – Survive and get the Highest Score</h1>
+  <div class="wrap">
+    <div class="panel" id="controls">
+      <h2>Game Settings</h2>
 
-  <header>
-    <h1>Welcome to My Website</h1>
-    <p>This is a simple animated page.</p>
-    <a href="#about" class="button">Learn More</a>
-  </header>
+      <div class="row">
+        <label for="playerSpeed">Your speed</label>
+        <input id="playerSpeed" type="number" min="50" max="800" step="10" value="280">
+      </div>
+      <div class="row">
+        <label for="enemySpeed">Enemy speed</label>
+        <input id="enemySpeed" type="number" min="50" max="1200" step="10" value="260">
+      </div>
+      <div class="row">
+        <label for="hearts">Hearts</label>
+        <input id="hearts" type="number" min="1" max="10" step="1" value="3">
+      </div>
+      <div class="row">
+        <label for="enemyCount">Enemies</label>
+        <input id="enemyCount" type="number" min="1" max="20" step="1" value="6">
+      </div>
+      <div class="row">
+        <label for="laneWidth">Lane width (px)</label>
+        <input id="laneWidth" type="number" min="40" max="160" step="10" value="80">
+      </div>
 
-  <section id="about">
-    <h2>About This Page</h2>
-    <p>Everything you see fades in as you scroll.</p>
-  </section>
+      <button class="btn" id="startBtn">Start Game</button>
+      <p class="hint">Move with <b>W/A/S/D</b> or <b>Arrow keys</b>. Pause with <b>P</b>. Colliding with an enemy costs a heart. Survive to boost your score.</p>
+      <p class="small">Tip: Lower your speed and raise enemy speed for a harder game. Best Score is saved locally.</p>
+    </div>
 
-  <section id="contact">
-    <h2>Contact</h2>
-    <p>Made with ❤️ and CSS animations.</p>
-    <a href="#top" class="button">Back to Top</a>
-  </section>
+    <div class="canvasWrap panel">
+      <canvas id="game" width="800" height="600" aria-label="Driving game canvas"></canvas>
+      <div class="hud">
+        <div class="hudTop">
+          <div class="badge" id="scoreBadge">Score: 0</div>
+          <div class="badge hearts" id="heartsBadge">❤❤❤</div>
+          <div class="badge" id="bestBadge">Best: 0</div>
+        </div>
+      </div>
+      <div class="overlay" id="overlay">
+        <div class="card">
+          <h3 id="overTitle">Game Over</h3>
+          <p id="overStats">You scored 0</p>
+          <div class="actions">
+            <button class="btn" id="restartBtn">Restart</button>
+            <button class="btn" id="closeBtn">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
+  <script>
+  (function(){
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    const scoreBadge = document.getElementById('scoreBadge');
+    const heartsBadge = document.getElementById('heartsBadge');
+    const bestBadge = document.getElementById('bestBadge');
+    const overlay = document.getElementById('overlay');
+    const overTitle = document.getElementById('overTitle');
+    const overStats = document.getElementById('overStats');
+    const restartBtn = document.getElementById('restartBtn');
+    const closeBtn = document.getElementById('closeBtn');
+
+    const controls = {
+      playerSpeed: document.getElementById('playerSpeed'),
+      enemySpeed: document.getElementById('enemySpeed'),
+      hearts: document.getElementById('hearts'),
+      enemyCount: document.getElementById('enemyCount'),
+      laneWidth: document.getElementById('laneWidth'),
+    };
+    const startBtn = document.getElementById('startBtn');
+
+    function resizeToParent() {
+      const wrap = canvas.parentElement;
+      const w = wrap.clientWidth - 2;
+      const ratio = canvas.height / canvas.width;
+      canvas.style.width = w + 'px';
+      canvas.style.height = Math.round(w * ratio) + 'px';
+    }
+    window.addEventListener('resize', resizeToParent);
+    resizeToParent();
+
+    let state = null;
+    let lastTime = 0;
+    let raf = null;
+
+    const keys = new Set();
+    window.addEventListener('keydown', (e)=>{
+      if(e.key === 'p' || e.key === 'P'){
+        if(e.repeat) return;
+        e.preventDefault();
+        togglePause();
+        return;
+      }
+      if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','a','s','d','W','A','S','D'].includes(e.key)){
+        e.preventDefault();
+        keys.add(e.key);
+      }
+    }, {passive:false});
+    window.addEventListener('keyup', (e)=> keys.delete(e.key));
+
+    function newGame(cfg){
+      const lanes = Math.max(3, Math.floor(canvas.width / cfg.laneWidth));
+      const roadWidth = lanes * cfg.laneWidth;
+      const roadX = (canvas.width - roadWidth)/2;
+
+      state = {
+        cfg,
+        paused: false,
+        invuln: 0,
+        score: 0,
+        hearts: cfg.hearts,
+        player: { x: canvas.width/2 - 15, y: canvas.height - 90, w: 30, h: 60, speed: cfg.playerSpeed },
+        enemies: [],
+        lanes, roadX, roadWidth,
+        lines: [],
+      };
+
+      for(let i=0;i<20;i++){
+        state.lines.push({ x: roadX + cfg.laneWidth/2, y: i*40, w: 8, h: 24 });
+        for(let l=1; l<lanes; l++){
+          state.lines.push({ x: roadX + l*cfg.laneWidth + cfg.laneWidth/2, y: i*40, w: 8, h: 24 });
+        }
+      }
+
+      for(let i=0;i<cfg.enemyCount;i++) state.enemies.push(spawnEnemy(state, true));
+
+      bestBadge.textContent = 'Best: ' + (Number(localStorage.getItem('bestScore_v1')) || 0);
+      heartsBadge.textContent = '❤'.repeat(state.hearts);
+      scoreBadge.textContent = 'Score: 0';
+
+      overlay.style.display = 'none';
+      cancelAnimationFrame(raf);
+      lastTime = performance.now();
+      raf = requestAnimationFrame(loop);
+    }
+
+    function spawnEnemy(s, initial=false){
+      const laneIndex = Math.floor(Math.random()*s.lanes);
+      const x = s.roadX + laneIndex * s.cfg.laneWidth + (s.cfg.laneWidth-28)/2;
+      const y = initial ? -Math.random()*canvas.height - 40 : -60;
+      const base = s.cfg.enemySpeed;
+      const speed = base * (0.9 + Math.random()*0.3);
+      return { x, y, w: 28, h: 54, speed };
+    }
+
+    function loop(t){
+      const dt = Math.min(0.05, (t - lastTime)/1000);
+      lastTime = t;
+      update(dt);
+      draw();
+      raf = requestAnimationFrame(loop);
+    }
+
+    function update(dt){
+      if(!state || state.paused) return;
+      state.score += dt * (1 + state.cfg.enemySpeed/400);
+      scoreBadge.textContent = 'Score: ' + Math.floor(state.score);
+      if(state.invuln > 0) state.invuln -= dt;
+      const lineSpeed = Math.max(120, state.cfg.enemySpeed * 0.8);
+      for(const ln of state.lines){ ln.y += lineSpeed * dt; if(ln.y > canvas.height) ln.y -= canvas.height + 40; }
+      const p = state.player;
+      let vx = 0, vy = 0;
+      if(keys.has('ArrowLeft') || keys.has('a') || keys.has('A')) vx -= 1;
+      if(keys.has('ArrowRight') || keys.has('d') || keys.has('D')) vx += 1;
+      if(keys.has('ArrowUp') || keys.has('w') || keys.has('W')) vy -= 1;
+      if(keys.has('ArrowDown') || keys.has('s') || keys.has('S')) vy += 1;
+      const mag = Math.hypot(vx,vy) || 1;
+      p.x += (vx/mag) * p.speed * dt;
+      p.y += (vy/mag) * p.speed * dt;
+      p.x = Math.max(state.roadX+4, Math.min(p.x, state.roadX + state.roadWidth - p.w - 4));
+      p.y = Math.max(8, Math.min(p.y, canvas.height - p.h - 8));
+      for(let i=0;i<state.enemies.length;i++){
+        const e = state.enemies[i];
+        e.y += e.speed * dt;
+        if(e.y > canvas.height + 60){ state.enemies[i] = spawnEnemy(state); continue; }
+        if(state.invuln <= 0 && aabb(p,e)) onHit();
+      }
+    }
+
+    function onHit(){
+      state.hearts -= 1;
+      heartsBadge.textContent = '❤'.repeat(Math.max(0,state.hearts));
+      state.invuln = 1.0;
+      if(state.hearts <= 0){
+        gameOver();
+      }
+    }
+
+    function gameOver(){
+      state.paused = true;
+      cancelAnimationFrame(raf);
+      const score = Math.floor(state.score);
+      const best = Math.max(score, Number(localStorage.getItem('bestScore_v1')) || 0);
+      localStorage.setItem('bestScore_v1', best);
+      overTitle.textContent = 'Game Over';
+      overStats.textContent = `You scored ${score}. Best: ${best}`;
+      bestBadge.textContent = 'Best: ' + best;
+      overlay.style.display = 'flex';
+    }
+
+    function togglePause(){
+      if(!state) return;
+      state.paused = !state.paused;
+      if(!state.paused){
+        hideOverlay();
+        lastTime = performance.now();
+        raf = requestAnimationFrame(loop);
+      } else {
+        cancelAnimationFrame(raf);
+        showPause();
+      }
+    }
+
+    function showPause(){
+      if(!state) return;
+      overTitle.textContent = 'Paused';
+      const score = Math.floor(state.score);
+      const best = Number(localStorage.getItem('bestScore_v1')) || 0;
+      overStats.textContent = `Score: ${score}. Best: ${best}`;
+      overlay.style.display = 'flex';
+    }
+
+    function hideOverlay(){ overlay.style.display = 'none'; }
+
+    function draw(){
+      if(!state) return;
+      const { roadX, roadWidth } = state;
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle = '#0a0f1e';
+      ctx.fillRect(roadX, 0, roadWidth, canvas.height);
+      ctx.fillStyle = '#9fb3ff1a';
+      for(const ln of state.lines){
+        ctx.fillRect(ln.x - ln.w/2, ln.y, ln.w, ln.h);
+      }
+      const p = state.player;
+      ctx.save();
+      if(state.invuln > 0){
+        ctx.globalAlpha = 0.55 + 0.45*Math.sin(performance.now()/60);
+      }
+      roundedRect(ctx, p.x, p.y, p.w, p.h, 6, '#7dd3fc', '#1f88ff');
+      ctx.restore();
+      for(const e of state.enemies){
+        roundedRect(ctx, e.x, e.y, e.w, e.h, 6, '#fb7185', '#b91c1c');
+      }
+      ctx.fillStyle = '#1e263a';
+      ctx.fillRect(roadX-8,0,8,canvas.height);
+      ctx.fillRect(roadX+roadWidth,0,8,canvas.height);
+    }
+
+    function aabb(a,b){
+      return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+    }
+
+    function roundedRect(ctx, x, y, w, h, r, fill, stroke){
+      ctx.beginPath();
+      ctx.moveTo(x+r, y);
+      ctx.arcTo(x+w, y, x+w, y+h, r);
+      ctx.arcTo(x+w, y+h, x, y+h, r);
+      ctx.arcTo(x, y+h, x, y, r);
+      ctx.arcTo(x, y, x+w, y, r);
+      ctx.closePath();
+      ctx.fillStyle = fill; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = stroke; ctx.stroke();
+    }
+
+    function getCfg(){
+      return {
+        playerSpeed: clamp(Number(controls.playerSpeed.value)||280, 50, 800),
+        enemySpeed: clamp(Number(controls.enemySpeed.value)||260, 50, 1200),
+        hearts: clamp(Math.floor(Number(controls.hearts.value)||3), 1, 10),
+        enemyCount: clamp(Math.floor(Number(controls.enemyCount.value)||6), 1, 20),
+        laneWidth: clamp(Math.floor(Number(controls.laneWidth.value)||80), 40, 160)
+      };
+    }
+
+    function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+
+    startBtn.addEventListener('click', ()=>{
+      hideOverlay();
+      newGame(getCfg());
+    });
+
+    restartBtn.addEventListener('click', ()=>{
+      hideOverlay();
+      newGame(getCfg());
+    });
+    closeBtn.addEventListener('click', ()=> hideOverlay());
+
+    newGame(getCfg());
+  })();
+  </script>
 </body>
 </html>
